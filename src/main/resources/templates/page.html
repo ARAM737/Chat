@@ -1,0 +1,169 @@
+<html xmlns:th="https://www.thymeleaf.org">
+<head>
+    <title>Chat WebSocket</title>
+    <link rel="stylesheet" href="css/style_auto.css"/>
+    <link rel="stylesheet" href="css/style_admin.css"/>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script type="text/javascript" th:src="@{/js/sockjs-0.3.4.js}"></script>
+    <script type="text/javascript" th:src="@{js/stomp.js}"></script>
+
+</head>
+<body class="container" id="cont" onload="disconnect()">
+<div>
+    <div class="au">
+        <div class="au1">
+            <div class="au_text">Подключение</div>
+        </div>
+        <div class="au2">
+            <div>
+                <input type="text" class="login" id="from" placeholder="Choose a nickname"/>
+            </div>
+            <br />
+            <div>
+                <button class="button_au" id="connect" onclick="connect()">Connect</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript">
+    location.hash = 'auto'
+    var stompClient = null;
+    var from;
+    // function setConnected(connected) {
+    //     document.getElementById('connect').disabled = connected;
+    //     document.getElementById('disconnect').disabled = !connected;
+    //     document.getElementById('conversationDiv').style.visibility
+    //         = connected ? 'visible' : 'hidden';
+    //     document.getElementById('response').innerHTML = '';
+    // }
+    let but_au = document.getElementById('connect')
+    but_au.onclick = function() {
+        var socket = new SockJS('/chat');
+        stompClient = Stomp.over(socket);
+        stompClient.connect({}, function(frame) {
+            console.log('Connected: ' + frame);
+            stompClient.subscribe('/topic/messages', function(messageOutput) {
+                showMessageOutput(JSON.parse(messageOutput.body));
+            });
+        });
+        from = document.getElementById('from').value;
+        let inner = ('<div class="au">\n' +
+            '    <div class="au1">\n' +
+            '        <div class="au_text">Чат</div>\n' +
+            '    </div>\n' +
+            '        <div class="au2">\n' +
+            '                        <input type="text" class="login" id="text" placeholder="Write a message..."/>\n' +
+            '            <br/>\n' +
+            '                        <button class="button_au" id="sendMessage">Send</button>\n' +
+            '                        <button class="button_au" id="disconnect"> Disconnect</button>\n' +
+            '                        <div class="login" id="response"></div>\n' +
+            '        </div>\n' +
+            '   </div>')
+        document.body.innerHTML = inner;
+        location.hash = 'chat'
+        function showMessageOutput(messageOutput) {
+            var response = document.getElementById('response');
+            var p = document.createElement('p');
+            p.style.wordWrap = 'break-word';
+            p.appendChild(document.createTextNode(messageOutput.name + ": "
+                + messageOutput.message));
+            response.appendChild(p);
+        }
+    }
+
+    window.addEventListener('hashchange', function (){
+        if (location.hash == '#chat'){
+            let but_dis=document.getElementById('disconnect');
+            let but_send = document.getElementById('sendMessage');
+            document.getElementById('response').innerHTML = '';
+            but_dis.onclick =function (){
+                let innerdis = ('<body class="container" id="cont" onload="disconnect()">\n' +
+                    '<div>\n' +
+                    '    <div class="au">\n' +
+                    '        <div class="au1">\n' +
+                    '            <div class="au_text">Подключение</div>\n' +
+                    '        </div>\n' +
+                    '        <div class="au2">\n' +
+                    '    <div>\n' +
+                    '        <input type="text" class="login" id="from" placeholder="Choose a nickname"/>\n' +
+                    '    </div>\n' +
+                    '    <br />\n' +
+                    '    <div>\n' +
+                    '        <button class="button_au" id="connect" onclick="connect();">Connect</button>\n' +
+                    '\n' +
+                    '    </div>\n' +
+                    '        </div>\n' +
+                    '</div>\n' +
+                    '</div>\n' +
+                    '\n' +
+                    '</body>');
+                document.body.innerHTML = innerdis;
+                location.hash = 'auto';
+                if(stompClient != null) {
+                    stompClient.disconnect();
+                }
+                setConnected(false);
+                console.log("Disconnected");
+            }
+
+            but_send.onclick =function () {
+                var text = document.getElementById('text').value;
+                stompClient.send("/app/chat", {},
+                    JSON.stringify({'from':from, 'text':text}));
+            }
+        }
+        if (location.hash == '#auto'){
+            let but_au = document.getElementById('connect')
+            but_au.onclick = function() {
+                var socket = new SockJS('/chat');
+                stompClient = Stomp.over(socket);
+                stompClient.connect({}, function(frame) {
+                    console.log('Connected: ' + frame);
+                    stompClient.subscribe('/topic/messages', function(messageOutput) {
+                        showMessageOutput(JSON.parse(messageOutput.body));
+                    });
+                });
+                from = document.getElementById('from').value;
+                let inner = ('<div class="au">\n' +
+                    '    <div class="au1">\n' +
+                    '        <div class="au_text">Чат</div>\n' +
+                    '    </div>\n' +
+                    '        <div class="au2">\n' +
+                    '                        <input type="text" class="login" id="text" placeholder="Write a message..."/>\n' +
+                    '            <br/>\n' +
+                    '                        <button class="button_au" id="sendMessage">Send</button>\n' +
+                    '                        <button class="button_au" id="disconnect"> Disconnect</button>\n' +
+                    '                        <div class="login" id="response"></div>\n' +
+                    '        </div>\n' +
+                    '   </div>')
+                document.body.innerHTML = inner;
+                location.hash = 'chat'
+            }
+            function showMessageOutput(messageOutput) {
+                var response = document.getElementById('response');
+                var p = document.createElement('p');
+                p.style.wordWrap = 'break-word';
+                p.appendChild(document.createTextNode(messageOutput.name+" : "+messageOutput.message ));
+                response.appendChild(p);
+            }
+        }
+    })
+
+
+    function disconnect() {
+        if(stompClient != null) {
+            stompClient.disconnect();
+        }
+        setConnected(false);
+        console.log("Disconnected");
+    }
+
+
+
+</script>
+
+</body>
+</html>
